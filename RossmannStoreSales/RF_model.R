@@ -111,6 +111,7 @@ clf <- xgb.train(   params              = param,
                     verbose             = 0,
                     early.stop.round    = 100,
                     watchlist           = watchlist,
+                    num_parallel_tree = 1000, 
                     maximize            = FALSE,
                     feval=RMPSE
 )
