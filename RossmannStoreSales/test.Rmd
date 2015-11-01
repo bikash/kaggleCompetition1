@@ -30,11 +30,13 @@ str(test)
 str(store)
 # head(train); tail(train)
 # head(test); tail(test)
-train[, Date := as.Date(Date)]
-test[, Date := as.Date(Date)]
+#train[, Date := as.Date(Date)]
+#test[, Date := as.Date(Date)]
+train$Date <- as.Date(train$Date)
+test$Date <- as.Date(test$Date)
 store
-train <- train[order(Date)]
-test <- test[order(Date)]
+#train <- train[order(Date)]
+#test <- test[order(Date)]
 summary(train)
 summary(test)
 test[is.na(test$Open), ] # Only store 622
