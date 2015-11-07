@@ -37,14 +37,17 @@ hist(train$Sales, 100)
 train.opensample<- subset(train, Open >0)
 hist(train.opensample$Sales, 100)
 
-train$Date <- as.Date(train$Date)
-test$Date <- as.Date(test$Date)
 
+
+#Add Year, Month, Week and Day to trainingset
+train = as.data.table(train)
+train$day = day(as.Date(train$Date,"%y/%m/%d"))
+train$week = week(as.Date(train$Date,"%y/%m/%d"))
+train$month = month(as.Date(train$Date,"%y/%m/%d"))
+train$year = year(as.Date(train$Date,"%y/%m/%d"))
 
 
 rf1 <- randomForest( Sales~Customers+Promo+StateHoliday+SchoolHoliday, data = train.opensample, ntree= 100, importance= TRUE)
-
-
 imp <- varImp(rf1)
 imp
 test <-importance(rf1, type=2)
