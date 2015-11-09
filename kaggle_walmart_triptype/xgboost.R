@@ -1,3 +1,11 @@
+# Data fields
+# TripType - a categorical id representing the type of shopping trip the customer made. This is the ground truth that you are predicting. TripType_999 is an "other" category.
+# VisitNumber - an id corresponding to a single trip by a single customer
+# Weekday - the weekday of the trip
+# Upc - the UPC number of the product purchased
+# ScanCount - the number of the given item that was purchased. A negative value indicates a product return.
+# DepartmentDescription - a high-level description of the item's department
+# FinelineNumber - a more refined category for each of the products, created by Walmart
 
 library(readr)
 library(xgboost)
@@ -31,6 +39,17 @@ for(i in 1:numclass)
 }
 ############################################
 
+
+# Create outcomes for xgboost
+library(data.table)
+outcomes <- data.table(TripType = sort(unique(train$TripType)))
+outcomes$Index <- seq_along(outcomes$TripType) - 1
+
+# Combine train and test
+data <- data.table(rbind(train, cbind(TripType = -1, test))) ## test data has trip type = -1
+
+
+
 # Save the name of the last column target
 # nameLastCol <- names(train)[1] ## TripType
 # y1 = train[,ncol(train)]
@@ -51,6 +70,8 @@ train$TripType<-NULL
 train$TripType1<-NULL
 
 trainlength = nrow(train)
+
+
 x = rbind(train, test)
 x[is.na(x)] <- -1
 dmy = dummyVars(" ~ . ", x)

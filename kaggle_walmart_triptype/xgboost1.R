@@ -196,7 +196,7 @@ xgb.plot.tree(feature_names = names, model = bst, n_first_tree = 2)
 pred <- predict(bst, test1)
 
 # Decode prediction
-pred <- matrix(pred, nrow=38, ncol=length(pred) / num.class)
+pred <- matrix(pred, nrow=38, ncol=length(pred) / 38)
 pred <- t(pred)
 
 # output
