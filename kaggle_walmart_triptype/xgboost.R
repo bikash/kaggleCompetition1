@@ -42,7 +42,11 @@ train$Upc <- NULL
 test$Upc <- NULL
 train$Weekday <- NULL
 test$Weekday <- NULL
+
+#y <- plyr::mapvalues(train$TripType, from = outcomes$TripType, to = outcomes$Index)
+
 y <- train$TripType1
+num.class <- length(unique(y))+1
 train$TripType<-NULL
 train$TripType1<-NULL
 
@@ -59,20 +63,42 @@ test1  = x[(nrow(train)+1):nrow(x),]
 headers = colnames(train)
 
 
+
 print("Training the model")
-param <- list("objective" = "multi:softprob",
-              "eval_metric" = 'mlogloss', 
-              "num_class" = 39, 
-              "nthread" = 16,
-              "bst:eta" = .01,
-              "bst:max_depth" = 30,
-              "lambda" = 1,
-              "lambda_bias" = 0,
-              "gamma" = 1,
-              "alpha" = .8,
-              "min_child_weight" = 3,
-              "subsample" = .9,
-              "colsample_bytree" = .9)
+# xgboost parameters
+param <- list("objective" = "multi:softprob",    # multiclass classification 
+              "num_class" = num.class,    # number of classes 
+              "eval_metric" = "mlogloss",    # evaluation metric 
+              "nthread" = 8,   # number of threads to be used 
+              "max_depth" = 16,    # maximum depth of tree 
+              "eta" = 0.3,    # step size shrinkage 
+              "gamma" = 0,    # minimum loss reduction 
+              "subsample" = 1,    # part of data instances to grow tree 
+              "colsample_bytree" = 1,  # subsample ratio of columns when constructing each tree 
+              "min_child_weight" = 12  # minimum sum of instance weight needed in a child 
+)
+
+# param <- list("objective" = "multi:softprob",
+#               "eval_metric" = 'mlogloss', 
+#               "num_class" = 39, 
+#               "nthread" = 16,
+#               "bst:eta" = .01,
+#               "bst:max_depth" = 30,
+#               "lambda" = 1,
+#               "lambda_bias" = 0,
+#               "gamma" = 1,
+#               "alpha" = .8,
+#               "min_child_weight" = 3,
+#               "subsample" = .9,
+#               "colsample_bytree" = .9)
+
+cv.nround <- 50 # 200
+cv.nfold <- 3 # 10
+
+bst.cv <- xgb.cv(param=param, data = train1, label = y, 
+                 nfold = cv.nfold, nrounds = cv.nround, prediction = TRUE, verbose = 1)
+
+tail(bst.cv$dt)
 
 nround = 400
 bst = xgboost(param=param, data = train1, label = y, nrounds=nround, verbose = 1)
