@@ -57,7 +57,7 @@ item.counts <- summarise(group_by(dt, VisitNumber), TotalScan = sum(ScanCount), 
 
 # Convert dt data.frame from long to wide format using dcast from reshape2 package
 # We want to aggregate on columns "TripType", "VisitNumber" and "Weekday" 
-dt.long <- melt(data = dt, measure.vars = c("ScanCount", "ReturnCount"))
+dt.long <- melt(data = data, measure.vars = c("ScanCount", "ReturnCount"))
 dt.long <- rename(dt.long, ItemCount = variable)
 
 dt.wide1 <- dcast(data = dt.long,
