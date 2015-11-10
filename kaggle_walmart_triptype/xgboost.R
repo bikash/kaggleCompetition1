@@ -155,7 +155,13 @@ model <- xgb.dump(bst, with.stats = T)
 model[1:10]
 
 ## Prediction
+test$FinelineNumber <- addNA(test$FinelineNumber)
 test.matrix <- as.matrix(test)
+test.matrix <- as(test.matrix, "dgCMatrix") # conversion to sparse matrix
+dtrain <- xgb.DMatrix(data = test.matrix, label = y)
+
+
+
 pred <- predict(bst, test.matrix)
 
 # Decode prediction
