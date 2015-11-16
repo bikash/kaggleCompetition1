@@ -158,10 +158,9 @@ model[1:10]
 test$FinelineNumber <- addNA(test$FinelineNumber)
 test.matrix <- as.matrix(test)
 test.matrix <- as(test.matrix, "dgCMatrix") # conversion to sparse matrix
-dtrain <- xgb.DMatrix(data = test.matrix, label = y)
+#dtest <- xgb.DMatrix(data = test.matrix, label = y)
 
-
-
+## prediction
 pred <- predict(bst, test.matrix)
 
 # Decode prediction
