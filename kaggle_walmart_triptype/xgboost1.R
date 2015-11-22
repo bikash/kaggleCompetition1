@@ -29,8 +29,7 @@ time.start <- Sys.time()
 train.data <- read.csv("data/train.csv", header = TRUE)
 test.data <- read.csv("data/test.csv", header = TRUE)
 
-# train.data <- train.data[1:1000, ]
-# test.data <- test.data[1:1000, ]
+
 
 # Create outcomes for xgboost
 outcomes <- data.frame(TripType = sort(unique(train.data$TripType)))

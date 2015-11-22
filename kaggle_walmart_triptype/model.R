@@ -7,13 +7,14 @@
 # DepartmentDescription - a high-level description of the item's department
 # FinelineNumber - a more refined category for each of the products, created by Walmart
 
-library(readr)
-library(xgboost)
 
-require(caret)
-require(plyr)
-require(Metrics)
-require(ROCR)
+library(xgboost)
+library(sqldf)
+library(reshape2)
+library(data.table)
+library(plyr)
+library(rpart)
+
 library(doMC)
 registerDoMC(cores = 4)
 
