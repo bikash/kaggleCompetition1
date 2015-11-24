@@ -7,6 +7,7 @@
 # DepartmentDescription - a high-level description of the item's department
 # FinelineNumber - a more refined category for each of the products, created by Walmart
 
+
 library(readr)
 library(xgboost)
 
