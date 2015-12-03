@@ -31,18 +31,17 @@ test <- read.table("data/test.csv",sep=',',header = T)
 outcomes <- data.frame(TripType = sort(unique(train$TripType)))
 outcomes$Index <- seq_along(outcomes$TripType) - 1
 
-
-# Convert NA values
-# NA values are found in FinelineNumber and Upc. "NULL" string value is found in DepartmentDescription.
-test$FinelineNumber <- addNA(test$FinelineNumber)
-test$Upc <- addNA(test$Upc)
-train$FinelineNumber <- addNA(train$FinelineNumber)
-train$Upc <- addNA(train$Upc)
-train <- train[, NullDescription:=ifelse (train$DepartmentDescription == "NULL", 1, 0)]
-test <- test[, NullDescription:=ifelse (train$DepartmentDescription == "NULL", 1, 0)]
+####
+data <-aggregate(TripType~ VisitNumber, train, max)
+write.csv(data, file="train_result.csv", quote=FALSE,row.names=FALSE)
 
 
+####
+train.fet <- read.table("data/train_fet.csv",sep=',',header = T)
+test.fet <- read.table("data/test_fet.csv",sep=',',header = T)
 
+## load train result <visitnumer, triptype>
+train_triptype <- read.table("data/train_triptype.csv",sep=',',header = T)
 
 
 
