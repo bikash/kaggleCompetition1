@@ -3,3 +3,4 @@ output/*
 walmart_r_3/*
 *.csv
 *.zip 
+*.Rda
