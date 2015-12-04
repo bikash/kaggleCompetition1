@@ -184,10 +184,8 @@ names <- dimnames(train1)[[2]]
 
 # Compute feature importance matrix
 importance_matrix <- xgb.importance(names, model = bst)
-
 # Nice graph
 xgb.plot.importance(importance_matrix[1:20,])
-
 # Tree plot - not working
 xgb.plot.tree(feature_names = names, model = bst, n_first_tree = 2)
 
