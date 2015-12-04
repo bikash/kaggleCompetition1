@@ -33,10 +33,9 @@ outcomes$Index <- seq_along(outcomes$TripType) - 1
 
 ####
 train <- read.table("data/train_final.csv",sep=',',header = T)
-test <- read.table("data/test_final.csv",sep=',',header = T)
 
 ## load train result <visitnumer, triptype>
-train_triptype <- read.table("train_result.csv",sep=',',header = T)
+train_triptype <- read.table("data/train_result.csv",sep=',',header = T)
 
 ### map trip type to unique number.
 library(plyr)
@@ -48,6 +47,7 @@ train.matrix <- as.matrix(train)
 train.matrix <- as(train.matrix, "dgCMatrix") # conversion to sparse matrix
 dtrain <- xgb.DMatrix(train.matrix, label = label)
 
+test <- read.table("data/test_final.csv",sep=',',header = T)
 test.matrix <- as.matrix(test)
 test.matrix <- as(test.matrix, "dgCMatrix") # conversion to sparse matrix
 dtest <- xgb.DMatrix(test.matrix)
@@ -71,17 +71,31 @@ nround = 400
 bst <- xgb.train( param=param, data=dtrain, label=label, nrounds=nround,  verbose  = 1)
 # Note: we need the margin value instead of transformed prediction in set_base_margin
 # do predict with output_margin=TRUE, will always give you margin values before logistic transformation
-
-
+save(bst,file="xgboost.Rda")
+load("xgboost.Rda")
 # Get the feature real names
 #names <- dimnames(dtrain)[[2]]
 # Compute feature importance matrix
 #importance_matrix <- xgb.importance(names, model = bst)
 # Nice graph
-xgb.plot.importance(importance_matrix[1:10,])
+#xgb.plot.importance(importance_matrix[1:10,])
 
 
 ptest  <- predict(bst, dtest)
 head(ptest)
 
+
+
+# Decode prediction
+ptest <- matrix(ptest, nrow=38, ncol=length(ptest) / 38)
+pred <- t(ptest)
+
+# output
+submit <- function(filename) {
+  pred <- data.frame(cbind(test$VisitNumber, pred))
+  names(pred) <- c("VisitNumber", paste("TripType", outcomes$TripType, sep = "_")) 
+  
+  write.table(format(pred, scientific = FALSE), paste("output/", filename, sep = ""), row.names = FALSE, sep = ",")
+}
+submit("xgboost.csv")
 
