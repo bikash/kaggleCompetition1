@@ -68,15 +68,15 @@ param <- list("objective" = "multi:softprob",    # multiclass classification
 )
 
 nround = 400
-bst <- xgb.train( param=param, data=dtrain, label=label, nrounds=nround )
+bst <- xgb.train( param=param, data=dtrain, label=label, nrounds=nround,  verbose  = 1)
 # Note: we need the margin value instead of transformed prediction in set_base_margin
 # do predict with output_margin=TRUE, will always give you margin values before logistic transformation
 
 
 # Get the feature real names
-names <- dimnames(dtrain)[[2]]
+#names <- dimnames(dtrain)[[2]]
 # Compute feature importance matrix
-importance_matrix <- xgb.importance(names, model = bst)
+#importance_matrix <- xgb.importance(names, model = bst)
 # Nice graph
 xgb.plot.importance(importance_matrix[1:10,])
 
