@@ -32,7 +32,7 @@ outcomes$Index <- seq_along(outcomes$TripType) - 1
 
 
 ####
-train <- read.table("data/train_final.csv",sep=',',header = T)
+train1 <- read.table("data/train_final.csv",sep=',',header = T)
 
 ## load train result <visitnumer, triptype>
 train_triptype <- read.table("data/train_result.csv",sep=',',header = T)
@@ -41,13 +41,16 @@ train_triptype <- read.table("data/train_result.csv",sep=',',header = T)
 library(plyr)
 label <- plyr::mapvalues(train_triptype$TripType, from = outcomes$TripType, to = outcomes$Index)
 
+label <- label[1:25000]
+train <- train1[1:25000,]
 
+test <-train1[25001:35000,]
 ###
 train.matrix <- as.matrix(train)
 train.matrix <- as(train.matrix, "dgCMatrix") # conversion to sparse matrix
 dtrain <- xgb.DMatrix(train.matrix, label = label)
 
-test <- read.table("data/test_final.csv",sep=',',header = T)
+#test <- read.table("data/test_final.csv",sep=',',header = T)
 test.matrix <- as.matrix(test)
 test.matrix <- as(test.matrix, "dgCMatrix") # conversion to sparse matrix
 dtest <- xgb.DMatrix(test.matrix)
@@ -56,11 +59,11 @@ dtest <- xgb.DMatrix(test.matrix)
 param <- list("objective" = "multi:softprob",    # multiclass classification 
               "num_class" = 38,    # number of classes 
               "eval_metric" = "mlogloss",    # evaluation metric 
-              "nthread" = 4,   # number of threads to be used 
+              "nthread" = 10,   # number of threads to be used 
               "silent" =1,
-              "max_depth" = 5,    # maximum depth of tree 
+              "max_depth" = 9,    # maximum depth of tree 
               "chi2_lim" = 0,
-              "eta" = 0.1,    # step size shrinkage 
+              "eta" = 0.02,    # step size shrinkage 
               "gamma" = 0,    # minimum loss reduction 
               "subsample" = 0.7,    # part of data instances to grow tree 
               "colsample_bytree" = 1,  # subsample ratio of columns when constructing each tree 
@@ -84,6 +87,9 @@ load("xgboost.Rda")
 ptest  <- predict(bst, dtest)
 head(ptest)
 
+
+
+confusionMatrix(iris$Species, sample(iris$Species))
 
 
 # Decode prediction
