@@ -20,9 +20,22 @@ store <- read.table("data/store.csv",sep=',',header = T)
 
 
 
+
+submission <- data.frame(Id=test$Id, Sales=pred1)
+cat("saving the submission file\n")
+write_csv(d, "output/xgb.csv")
+
 # removing the date column (since elements are extracted) and also StateHoliday which has a lot of NAs (may add it back in later)
 train <- merge(train,store)
 test <- merge(test,store)
+
+
+##replace NA to default value
+train$CompetitionOpenSinceMonth[is.na(train$CompetitionOpenSinceMonth)] <- 8
+test$CompetitionOpenSinceMonth[is.na(test$CompetitionOpenSinceMonth)] <- 8
+train$CompetitionOpenSinceYear[is.na(train$CompetitionOpenSinceYear)] <- 2009
+test$CompetitionOpenSinceYear[is.na(test$CompetitionOpenSinceYear)] <- 2009
+
 
 # There are some NAs in the integer columns so conversion to zero
 train[is.na(train)]   <- 0
@@ -42,6 +55,7 @@ summary(test)
 train <- train[ which(train$Open=='1'),]
 train <- train[ which(train$Sales!='0'),]
 # seperating out the elements of the date column for the train set
+# seperating out the elements of the date column for the test set
 train$Date <- ymd(train$Date)
 test$Date <- ymd(test$Date)
 train$day <- as.factor(day(train$Date))
@@ -51,18 +65,12 @@ test$month <- as.factor(month(test$Date))
 train$year <- as.factor(year(train$Date))
 test$year <- as.factor(year(test$Date))
 
-save(train, file = "train.RData")
-save(test, file = "test.RData")
+# removing the date column (since elements are extracted) and also StateHoliday which has a lot of NAs (may add it back in later)
+train <- train[,-c(3,8)]
 
-load("train.RData")
-load("test.RData")
 
 # removing the date column (since elements are extracted) and also StateHoliday which has a lot of NAs (may add it back in later)
-#train <- train[,-c(3,8)]
-train <- train[,-c(3)]
-# removing the date column (since elements are extracted) and also StateHoliday which has a lot of NAs (may add it back in later)
-#test <- test[,-c(4,7)]
-test <- test[,-c(2,4)]
+test <- test[,-c(4,7)]
 
 feature.names <- names(train)[c(1,2,5:19)]
 cat("Feature Names\n")
@@ -81,7 +89,6 @@ cat("train data column names after slight feature engineering\n")
 names(train)
 cat("test data column names after slight feature engineering\n")
 names(test)
-
 tra<-train[,feature.names]
 RMPSE<- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
@@ -110,7 +117,7 @@ param <- list(  objective           = "reg:linear",
 clf <- xgb.train(   params              = param, 
                     data                = dtrain, 
                     nrounds             = 3000, #300, #280, #125, #250, # changed from 300
-                    verbose             = 0,
+                    verbose             = 1,
                     early.stop.round    = 100,
                     watchlist           = watchlist,
                     maximize            = FALSE,
@@ -119,4 +126,5 @@ clf <- xgb.train(   params              = param,
 pred1 <- exp(predict(clf, data.matrix(test[,feature.names]))) -1
 submission <- data.frame(Id=test$Id, Sales=pred1)
 cat("saving the submission file\n")
-write_csv(submission, "output/xgboost1.csv")
+write_csv(submission, "output/xgb.csv")
+
