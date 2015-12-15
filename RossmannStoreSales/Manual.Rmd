@@ -1,0 +1,336 @@
+---
+title: 'How Does New Competition Affect Sales?'
+author: "ggep"
+date: '2015-12-13'
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+---
+
+
+***
+# Motivation
+
+This script is intended to explore how competition affects
+Rossmann store sales --- and in particular, what the effect
+of new competition looks like.
+
+Findings here may be useful in building predictive models for
+the accompanying [Kaggle's Rossmann sales forecasting competition](https://www.kaggle.com/c/rossmann-store-sales).
+They may also hold helpful business insights for Rossmann
+in deciding new store sales location and anticipating reactions
+when new competition opens.
+As an [RMarkdown](http://rmarkdown.rstudio.com/) file, all steps
+here are reproducible through Kaggle's Rossman [data](https://www.kaggle.com/c/rossmann-store-sales/data)
+and the code below.
+
+This script also highlights functionality of different R packages.
+Packages used here:
+
+```{r echo=FALSE}
+rm(list=ls())
+```
+```{r results='hide', message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(scales)
+```
+
+
+***
+# Data Preparation
+
+This data is unique at both a date-level (990 days from 1/1/13
+until 9/17/15) and store-level (1,115 total stores).  The analysis
+to come focuses first at the store-level (where the competition data
+are) but also moves to the date-level for understanding effects
+of new competition on sales over time.
+
+First, load train, test, and store data (`dplyr::read_csv` is faster than `utils::read.table`):
+
+```{r results='hide', message=FALSE}
+tr <- read_csv("../input/train.csv", col_types = list(StateHoliday = col_character()))
+te <- read_csv("../input/test.csv", col_types = list(StateHoliday = col_character()))
+st <- read_csv("../input/store.csv")
+```
+
+Add each store's average sales and customers to the store-level
+data frame:
+
+```{r}
+st <- left_join(st, summarize(group_by(tr[tr$Open == 1,], Store)
+                              , AvgSales = mean(Sales, na.rm = TRUE)
+                              , AvgCust = mean(Customers, na.rm = TRUE))
+                , "Store")
+```
+
+Add additional fields and clean-up:
+
+```{r warning=FALSE}
+st$Assortment[st$Assortment == "a"] <- "basic"
+st$Assortment[st$Assortment == "b"] <- "extra"
+st$Assortment[st$Assortment == "c"] <- "extended"
+st$StTyAs <- paste("'", st$StoreType, "'", " store type - "
+                   , st$Assortment, sep = "")
+st$CompDistBin <- ntile(st$CompetitionDistance, 5)
+st$CompDistBin <- paste(st$CompDistBin, "%ile")
+st$CompDistBin[st$CompDistBin == "NA %ile"] <- NA
+st$CompOpenDate <- ymd(paste(st$CompetitionOpenSinceYear
+                             , st$CompetitionOpenSinceMonth
+                             , "01"))
+st$CompOpenDate <- as.Date(st$CompOpenDate)
+st <- select(st
+             , Store
+             , StoreType
+             , Assortment
+             , StTyAs
+             , CompDist = CompetitionDistance
+             , CompDistBin
+             , CompOpenDate
+             , AvgSales
+             , AvgCust)
+st$AvgSpC <- st$AvgSales / st$AvgCust
+st$CompDays <- as.numeric(as.Date("2015-09-17") - st$CompOpenDate)
+```
+
+One note to keep in mind for upcoming analysis:
+while a competition distance is provided for all but three
+of the 1,115 stores,
+the competition open date variable is missing for 354 stores.
+
+
+***
+# Competition Effects
+
+One place to start is the distributions of competition openings 
+and competition distance --- the two variables provided to account
+for competition effects.
+
+Competition openings:
+
+```{r warning=FALSE}
+ggplot(st[st$StoreType != "b",]
+       , aes(CompOpenDate, fill = StoreType)) + 
+  stat_bin(binwidth = 365) +
+  scale_x_date("Date of Competition Opening") +
+  scale_y_continuous("# of Stores")
+```
+
+There was one competition store that opened January 1900 (store 815) 
+and another that opened October 1961 (store 146), while the majority of others
+opened after 2000. This may reflect reality (Rossmann either had
+very few of their own stores or very few competition for a long
+period of time) or data quality.  Store type doesn't appear to
+necessarily have different competition openings.
+
+Competition distance:
+
+```{r warning=FALSE}
+lbrk <- c(100, 1000, 10000)
+ggplot(st[st$StoreType != "b",]
+       , aes(CompDist, fill = StoreType)) + 
+  geom_density(adjust = .7, alpha = .5) +
+  scale_x_log10("Competition Distance", breaks = lbrk, label = comma) +
+  scale_y_continuous("# of Stores")
+```
+
+Note the log axis; competition can be distance is skewed-right
+and this transformation for distance may be appropriate.
+The distribution appears fairly consistent among store types,
+although "d" stores may have competition slightly further away.
+Also, there did not appear to be any noticeable interactions between
+competition opening and competition distance.
+
+How does competition distance affect customers and average
+sales per customer?
+
+```{r warning=FALSE}
+int_TilePlot <- function(data, response, x, y
+                         , r_lab = response, x_lab = x, y_lab = y
+                         , r_scale = comma, x_scale = comma, y_scale = comma
+                         , bins = 10, exp = 8){
+  library(ggplot2)
+  library(scales)
+  x_brk <- seq(min(data[[x]]), max(data[[x]]), length.out = bins)
+  y_brk <- seq(min(data[[y]]), max(data[[y]]), length.out = bins)
+  df <- data.frame(x_val = rep(x_brk, bins)
+                   , y_val = rep(y_brk, each = bins)
+                   , r_val = NA)
+  df$x_z <- (df$x_val - mean(data[[x]])) / sd(data[[x]])
+  df$y_z <- (df$y_val - mean(data[[y]])) / sd(data[[y]])
+  data$x_z <- (data[[x]] - mean(data[[x]])) / sd(data[[x]])
+  data$y_z <- (data[[y]] - mean(data[[y]])) / sd(data[[y]])
+  for (i in 1:nrow(df)){
+    dist <- numeric()
+    for (j in 1:nrow(data)){
+      dist <- append(dist, sqrt(abs(df$x_z[i] - data$x_z[j])^2
+                                + abs(df$y_z[i] - data$y_z[j])^2))
+    }
+    adjDist <- abs(dist - max(dist))^exp
+    wtdResp <- sum(adjDist * data[[response]]) / sum(adjDist)
+    df$r_val[i] <- wtdResp
+  }
+  ggplot(df, aes(x = x_val, y = y_val, z = r_val)) +
+    geom_tile(aes(fill = r_val)) +
+    stat_contour(bins = 15) +
+    scale_x_continuous(x_lab, labels = x_scale) +
+    scale_y_continuous(y_lab, labels = y_scale) +
+    scale_fill_continuous(r_lab, labels = r_scale) +
+    theme_minimal()
+}
+int_TilePlot(st[st$StoreType != 'b' & !is.na(st$CompDist),]
+             , "CompDist", "AvgSpC", "AvgCust"
+             , "Competition Distance"
+             , "Average Sales per Customer"
+             , "Average # of Customers"
+             , comma, dollar, comma)
+```
+
+The heatmap above shows stores with competition close by
+are in the upper-left; they average a larger number of customers
+but those customers have a fewer number of average sales.
+This makes sense that stores with competition further away
+are likely more remote and thus frequented by a smaller number
+of customers, but when those customers do come, they average
+a higher number of sales per customers.
+
+The following section explores the effect of new competition
+(competition date) on sales.
+
+# New Competition
+
+In order to understand the effect of new competition on sales
+over time, we need to first do some more data preparation,
+moving from the store-level data back into the larger
+date- and store-level data.
+
+```{r}
+# join store new variables back on training data
+tr <- left_join(tr, select(st, -AvgSales, -AvgCust, -AvgSpC)
+                , "Store")
+# create competition comparison data frame when sales data is
+# available for new stores
+cc <- tr[!is.na(tr$CompOpenDate)
+         & tr$CompOpenDate > as.Date("2013-01-01")
+         & tr$CompOpenDate < as.Date("2015-07-31")
+         & !is.na(tr$Sales)
+         & tr$Sales != 0
+         & tr$StoreType != "b"
+         & tr$StTyAs != "'c' store type  - extended",]
+# calculate additional fields
+cc$AvgSpC <- cc$Sales / cc$Customers
+cc$IsCompOpen <- ifelse(cc$Date >= as.Date(cc$CompOpenDate), 1, 0)
+cc$IsCompOpen[!is.na(cc$CompDist) & is.na(cc$CompOpenDate)] <- 1
+cc$IsCompOpen[is.na(cc$CompDist)] <- NA
+cc$DaysSinceNewComp <- as.numeric(cc$Date - cc$CompOpenDate)
+cc <- cc[abs(cc$DaysSinceNewComp) < 365,]
+# plot new store openings
+ggplot(cc, aes(CompOpenDate)) +
+  stat_bin(binwidth = 7) +
+  scale_x_date("Competition Open Date") +
+  scale_y_continuous("# of New Competition Day-Store Observations"
+                     , labels = comma)
+```
+
+The above plot shows that new competition for Rossmann appears to
+have arrived fairly randomly for the period in which we have sales
+data.
+
+Now we can see if there is a noticeable trend after stores open:
+
+```{r message=FALSE}
+ggplot(cc, aes(DaysSinceNewComp, Customers
+               , col = as.factor(IsCompOpen))) +
+  geom_point(alpha = .2) +
+  stat_smooth(se = FALSE, span = .5, size = 1.5, col = "gray50") +
+  scale_x_continuous("# of Days After (Before) New Competition") +
+  scale_y_continuous("# of Daily Store Customers", labels = comma) +
+  scale_color_discrete("Is Comp. Open?")
+```
+
+It appears there may be a small uptick in sales before new competition
+opens and a downturn after it opens, but there is a lot of variation
+within the data to notice a strong trend.
+
+As such, building very simple model sales prediction models --- which do
+not include any competition effects --- and looking at the residuals can help
+isolate the effects of competition and bring all stores to a more
+similar "level".
+
+```{r message=FALSE}
+# build simple linear regression models
+m_cust <- lm(Customers ~ Promo + as.factor(DayOfWeek) + StateHoliday
+             + as.factor(Store), cc)
+m_aspc <- lm(AvgSpC ~ Promo + as.factor(DayOfWeek) + StateHoliday
+             + as.factor(Store), cc)
+# compute residuals
+cc$res_m_cust <- cc$Customers - predict(m_cust)
+cc$res_m_aspc <- cc$AvgSpC - predict(m_aspc)
+# aggregate by median residuals for smoother patterns
+cca <- summarize(group_by(cc, DaysSinceNewComp)
+                 , NumObs = length(Date)
+                 , IsCompOpen = max(IsCompOpen)
+                 , MedResCust = median(res_m_cust)
+                 , MedResASpC = median(res_m_aspc))
+# new plot
+ggplot(cca, aes(DaysSinceNewComp, MedResCust
+               , col = as.factor(IsCompOpen))) +
+  stat_smooth(se = FALSE, size = 1.5) +
+  scale_x_continuous("# of Days After (Before) New Competition") +
+  scale_y_continuous("Residual of # of Daily Store Customers"
+                     , labels = comma) +
+  scale_color_discrete("Is Comp. Open?") +
+  geom_hline(y = 0, lty = 2, col = "gray20") +
+  geom_vline(x = 0, lty = 2, col = "gray20")
+```
+
+The plot above now shows a possible trend of more customers
+buying at Rossmann before competition opens, then an increasing
+drop for the first 100 days once it opens.  The number of
+customers start to level off, before dropping again around 225
+days since new competition --- this last drop-off may be an artifact
+of smaller sample size, or could be a true effect.  Further analysis
+(such as with more historical data)
+may be appropriate in fully understanding the longer-term effects of
+new competition.
+
+How does does competition distance affect the opening of a new store?
+
+```{r message=FALSE}
+# aggregate by median residuals for smoother patterns
+ccac <- summarize(group_by(cc, DaysSinceNewComp, CompDistBin)
+                 , NumObs = length(Date)
+                 , IsCompOpen = max(IsCompOpen)
+                 , MedResCust = median(res_m_cust)
+                 , MedResASpC = median(res_m_aspc))
+# new plot
+ggplot(ccac, aes(DaysSinceNewComp, MedResCust
+               , col = as.factor(CompDistBin))) +
+  stat_smooth(se = FALSE, span = .6, size = 1.5) +
+  scale_x_continuous("# of Days After (Before) New Competition") +
+  scale_y_continuous("Residual of # of Daily Store Customers"
+                     , labels = comma) +
+  scale_color_discrete("Comp. Dist. %ile") +
+  geom_hline(y = 0, lty = 2, col = "gray20") +
+  geom_vline(x = 0, lty = 2, col = "gray20")
+```
+
+The pattern here stands out.  Stores that have the closest competition
+are in the 1st percentile, and the effect of new competition opening up
+for them is by far the strongest.  The effects decrease in magnitude
+for the 2nd and 3rd percentiles, respectively.  In contrast, the 4th
+and 5th percentiles --- with competition the furthest away --- appear
+to not be affected at all when new competition opens.
+
+Overall, new competition and that competition distance strongly
+affect Rossmann sales. This insight can be valuable for both 
+building sales forecasting models as business strategy in
+planning store locations, anticipating new competition, and
+reacting to new competition.
+

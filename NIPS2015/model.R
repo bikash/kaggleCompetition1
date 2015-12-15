@@ -1,0 +1,7 @@
+library(magrittr)
+library(data.table)
+library(caret)
+library(Matrix)
+library(dplyr)
+setwd("/Users/bikash/repos/kaggleCompetition1/NIPS2015")
+set.seed(12345)
