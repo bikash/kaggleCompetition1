@@ -16,7 +16,7 @@ registerDoMC(cores = 4)
 
 setwd("/Users/bikash/repos/kaggleCompetition1/kaggle_walmart_triptype")
 # Set seed
-set.seed(12345)
+set.seed(1765)
 
 
 train.data <- read.table("data/train.csv",sep=',',header = T)
@@ -25,6 +25,9 @@ test <- read.table("data/test.csv",sep=',',header = T)
 # Create unique trip types for result
 outcomes <- data.frame(TripType = sort(unique(train.data$TripType)))
 outcomes$Index <- seq_along(outcomes$TripType) - 1
+
+
+
 
 ####
 #data <-aggregate(TripType~ VisitNumber, train, max)

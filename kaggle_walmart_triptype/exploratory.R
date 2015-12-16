@@ -76,3 +76,11 @@ test %>%
   ggvis(~wday, ~count) %>%
   layer_bars(fill:="#20beff")
 
+
+## get different UPC
+library(data.table)
+t <- model.matrix(~ 0 + VisitNumber + FinelineNumber, data = train.data) %>% as.data.table()
+
+
+
+
