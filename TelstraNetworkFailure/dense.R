@@ -13,7 +13,7 @@ if (!file.exists(logfile)) {
   file.create(logfile)
 }
 
-map <- plyr::mapvalues
+#map <- plyr::mapvalues
 
 d.event <- read.csv("data/event_type.csv") %>% data.table() %>% arrange(id) %>% rename(event = event_type)
 d.feature <- read.csv("data/log_feature.csv") %>% data.table() %>% arrange(id) %>% rename(feature = log_feature)
