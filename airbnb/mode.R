@@ -6,10 +6,11 @@ library(lubridate)
 library(ggplot2)
 library(sqldf)
 library(reshape2)
+library(stringr)
 library(doMC)
 registerDoMC(cores = 4)
 
-setwd("/Users/bikash/repos/kaggleCompetition1/RossmannStoreSales")
+setwd("/Users/bikash/repos/kaggleCompetition1/airbnb")
 # Set seed
 set.seed(1785)
 
@@ -75,6 +76,7 @@ xgb <- xgboost(data = data.matrix(X[,-1]),
                eval_metric = "merror",
                objective = "multi:softprob",
                num_class = 12,
+               verbose = 1,
                nthread = 3
 )
 
@@ -98,4 +100,4 @@ submission$country <- predictions_top5
 
 # generate submission file
 submission <- as.data.frame(submission)
-write.csv(submission, "submission.csv", quote=FALSE, row.names = FALSE)
+write.csv(submission, "output/xgb.csv", quote=FALSE, row.names = FALSE)
