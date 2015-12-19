@@ -35,7 +35,10 @@ outcomes$Index <- seq_along(outcomes$TripType) - 1
 
 
 ####
-train1 <- read.table("data/train_final.csv",sep=',',header = T)
+train <- read.table("data/train_final.csv",sep=',',header = T)
+
+test <- read.table("data/test_final.csv",sep=',',header = T)
+
 
 ## load train result <visitnumer, triptype>
 train_triptype <- read.table("data/train_result.csv",sep=',',header = T)
@@ -44,10 +47,10 @@ train_triptype <- read.table("data/train_result.csv",sep=',',header = T)
 library(plyr)
 label <- plyr::mapvalues(train_triptype$TripType, from = outcomes$TripType, to = outcomes$Index)
 
-label <- label[1:25000]
-train <- train1[1:25000,]
-
-test <-train1[25001:35000,]
+# label <- label[1:25000]
+# train <- train1[1:25000,]
+# 
+# test <-train1[25001:35000,]
 ###
 train.matrix <- as.matrix(train)
 train.matrix <- as(train.matrix, "dgCMatrix") # conversion to sparse matrix
@@ -66,9 +69,9 @@ param <- list("objective" = "multi:softprob",    # multiclass classification
               "silent" =1,
               "max_depth" = 9,    # maximum depth of tree 
               "chi2_lim" = 0,
-              "eta" = 0.02,    # step size shrinkage 
+              "eta" = 0.03,    # step size shrinkage 
               "gamma" = 0,    # minimum loss reduction 
-              "subsample" = 0.7,    # part of data instances to grow tree 
+              "subsample" = 0.5,    # part of data instances to grow tree 
               "colsample_bytree" = 1,  # subsample ratio of columns when constructing each tree 
               "min_child_weight" = 12  # minimum sum of instance weight needed in a child 
 )
@@ -92,7 +95,7 @@ head(ptest)
 
 
 
-confusionMatrix(iris$Species, sample(iris$Species))
+#confusionMatrix(iris$Species, sample(iris$Species))
 
 
 # Decode prediction
@@ -106,5 +109,5 @@ submit <- function(filename) {
   
   write.table(format(pred, scientific = FALSE), paste("output/", filename, sep = ""), row.names = FALSE, sep = ",")
 }
-submit("xgboost.csv")
+submit("xgboost1.csv")
 
