@@ -64,7 +64,6 @@ data$ScanCount[data$ScanCount < 0] <- 0
 data$ResultCount <- data$ScanCount - data$ReturnCount
 
 # Calculate Scan and Return counts by VisitNumber
-
 library(dplyr)
 item.counts <- summarise(group_by(data, VisitNumber),
                          TotalScan = sum(ScanCount), TotalReturn = sum(ReturnCount), TotalResult = sum(ResultCount))
@@ -75,9 +74,7 @@ item.counts <- summarise(group_by(data, VisitNumber),
 # Convert dt data.frame from long to wide format using dcast from reshape2 package
 # We want to aggregate on columns "TripType", "VisitNumber" and "Weekday" 
 library(reshape2)
-
-
-dt.long <- melt(data = data, measure.vars = c("ScanCount", "ReturnCount", "ResultCount"))
+dt.long <- melt(data = dt, measure.vars = c("ScanCount", "ReturnCount", "ResultCount"))
 dt.long <- rename(dt.long, ItemCount = variable)
 
 
