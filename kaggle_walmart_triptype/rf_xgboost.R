@@ -45,22 +45,23 @@ train$Upc <- addNA(train$Upc)
 Dept <- sqldf('select distinct DepartmentDescription from train')
 Dept$Dept_No <- (1: dim(Dept)[1])
 
-VisitData1 <- sqldf('select distinct visitNumber, TripType, Weekday, sum(scancount) as tot_item, count(scancount) as uniq_item
-                    from train group by visitNumber, TripType, Weekday')
-Returnitem <- sqldf('select distinct visitNumber, TripType, Weekday, sum(scancount) as ret_item
-                    from train where scancount<0 group by visitNumber, TripType, Weekday')
+train$ReturnCount <- -train$ScanCount
+train$ReturnCount[train$ReturnCount < 0] <- 0
+
+VisitData1 <- sqldf('select distinct visitNumber, TripType, Weekday, sum(scancount) as tot_item, 
+                    sum(ReturnCount) as ret_item, count(scancount) as uniq_item
+                    from train group by visitNumber, Weekday')
 
 VisitDept <- sqldf('select visitNumber, DepartmentDescription, sum(scancount) as tot_item
-                   from train group by visitNumber, DepartmentDescription')
+                   from train group by visitNumber, TripType, DepartmentDescription')
 VisitDept <- sqldf('select a.VisitNumber, a.tot_item, b.Dept_No from VisitDept a left join Dept b on a.DepartmentDescription = b.DepartmentDescription')
 
 VisitData2 <- data.frame(acast(VisitDept,VisitNumber ~ Dept_No, fill = 0))
 
 setDT(VisitData2, keep.rownames = TRUE)
 rename(VisitData2, c("rn" = "VisitNumber"))
-VisitDataF <- sqldf('select a.TripType, a.Weekday, a.tot_item, a.uniq_item, c.ret_item
-                    , b.* from VisitData1 a join VisitData2 b on a.VisitNumber = b.VisitNumber
-                                            join Returnitem c on a.VisitNumber = c.VisitNumber  ')
+VisitDataF <- sqldf('select a.TripType, a.Weekday, a.tot_item, a.uniq_item, a.ret_item
+                    , b.* from VisitData1 a join VisitData2 b on a.VisitNumber = b.VisitNumber ')
 VisitDataF$Weekday <- as.integer(VisitDataF$Weekday)
 # VisitDataF$tot_item <- log1p(VisitDataF$tot_item)
 # VisitDataF$ret_item <- log1p(VisitDataF$ret_item)
@@ -78,11 +79,11 @@ test$ReturnCount <- -test$ScanCount
 test$ReturnCount[test$ReturnCount < 0] <- 0
 
 tVisitData1 <- sqldf('select distinct visitNumber, Weekday, sum(scancount) as tot_item, sum(ReturnCount) as ret_item, 
-                  count(scancount) as uniq_item
-                    from test group by visitNumber, Weekday')
+                     count(scancount) as uniq_item
+                     from test group by visitNumber, Weekday')
 
 tVisitDept <- sqldf('select visitNumber, DepartmentDescription, sum(scancount) as tot_item
-                   from test group by visitNumber, TripType, Weekday')
+                    from test group by visitNumber, TripType, Weekday')
 
 tVisitDept <- sqldf('select a.VisitNumber, a.tot_item, b.Dept_No from tVisitDept a 
                     left join Dept b on a.DepartmentDescription = b.DepartmentDescription')
@@ -93,7 +94,7 @@ setDT(tVisitData2, keep.rownames = TRUE)
 rename(tVisitData2, c("rn" = "VisitNumber"))
 
 tVisitDataF <- sqldf('select  a.Weekday, a.tot_item, a.uniq_item, a.ret_item
-                    , b.* from tVisitData1 a join tVisitData2 b on a.VisitNumber = b.VisitNumber')
+                     , b.* from tVisitData1 a join tVisitData2 b on a.VisitNumber = b.VisitNumber')
 tVisitDataF$Weekday <- as.integer(tVisitDataF$Weekday)
 # VisitDataF$tot_item <- log1p(VisitDataF$tot_item)
 # VisitDataF$ret_item <- log1p(VisitDataF$ret_item)
@@ -120,16 +121,33 @@ VisitDataF$TripType <- NULL
 
 
 
+
+
+
+
+
+####
+##
+head(VisitDataF)
+head(tVisitDataF)
+train <- read.table("data/train_final.csv",sep=',',header = T)
+test <- read.table("data/test_final.csv",sep=',',header = T)
+train$uniq_item <- VisitDataF$uniq_item
+train$tot_item <- VisitDataF$tot_item
+test$uniq_item <- tVisitDataF$uniq_item
+test$tot_item <- tVisitDataF$tot_item
+
 ###
-train.matrix <- as.matrix(VisitDataF)
+train.matrix <- as.matrix(train)
 train.matrix <- as(train.matrix, "dgCMatrix") # conversion to sparse matrix
 dtrain <- xgb.DMatrix(train.matrix, label = label)
 
 #test <- read.table("data/test_final.csv",sep=',',header = T)
-test.matrix <- as.matrix(tVisitDataF)
+test.matrix <- as.matrix(test)
 test.matrix <- as(test.matrix, "dgCMatrix") # conversion to sparse matrix
 dtest <- xgb.DMatrix(test.matrix)
 
+cat("Training model - Xgboost\n")
 # xgboost parameters
 param <- list("objective" = "multi:softprob",    # multiclass classification 
               "num_class" = 38,    # number of classes 
@@ -152,15 +170,34 @@ bst <- xgb.train( param=param, data=dtrain, label=label, nrounds=nround,  verbos
 #save(bst,file="xgboost.Rda")
 #load("xgboost.Rda")
 # Get the feature real names
-names <- dimnames(dtrain)[[2]]
+#names <- dimnames(dtrain)[[2]]
 # Compute feature importance matrix
-importance_matrix <- xgb.importance(names, model = bst)
+#importance_matrix <- xgb.importance(names, model = bst)
 # Nice graph
-xgb.plot.importance(importance_matrix[1:10,])
+#xgb.plot.importance(importance_matrix[1:40,])
 
 
 ptest  <- predict(bst, dtest)
 head(ptest)
+
+
+
+###RAndom Forest
+
+cat("Training model - RF\n")
+set.seed(8)
+rf <- randomForest(dtrain, y, ntree=100, imp=TRUE, sampsize=10000, do.trace=TRUE)
+#predict_rf1 <- predict(rf, mtrain)
+predict_rf2 <- predict(rf, mtest)
+
+
+
+
+
+
+
+
+
 
 # Decode prediction
 ptest <- matrix(ptest, nrow=38, ncol=length(ptest) / 38)
@@ -177,6 +214,7 @@ submit <- function(filename) {
 }
 
 submit("xgboost2.csv")
+
 
 
 
