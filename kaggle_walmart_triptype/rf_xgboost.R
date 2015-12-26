@@ -49,7 +49,7 @@ train$ReturnCount <- -train$ScanCount
 train$ReturnCount[train$ReturnCount < 0] <- 0
 
 VisitData1 <- sqldf('select distinct visitNumber, TripType, Weekday, sum(scancount) as tot_item, 
-                    sum(ReturnCount) as ret_item, count(scancount) as uniq_item
+                    sum(ReturnCount) as ret_item, count(unqiue(scancount)) as uniq_item
                     from train group by visitNumber, Weekday')
 
 VisitDept <- sqldf('select visitNumber, DepartmentDescription, sum(scancount) as tot_item
@@ -170,11 +170,11 @@ bst <- xgb.train( param=param, data=dtrain, label=label, nrounds=nround,  verbos
 #save(bst,file="xgboost.Rda")
 #load("xgboost.Rda")
 # Get the feature real names
-#names <- dimnames(dtrain)[[2]]
+#names <- dimnames(train)[[2]]
 # Compute feature importance matrix
 #importance_matrix <- xgb.importance(names, model = bst)
 # Nice graph
-#xgb.plot.importance(importance_matrix[1:40,])
+#xgb.plot.importance(importance_matrix[1:30,])
 
 
 ptest  <- predict(bst, dtest)
