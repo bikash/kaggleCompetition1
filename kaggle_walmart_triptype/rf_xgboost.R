@@ -123,6 +123,15 @@ VisitDataF$TripType <- NULL
 
 
 
+library(dplyr)
+# group by customer
+g_user <- group_by(train, VisitNumber)
+g_userScanCount <- g_user %>% summarize(TotalScanCount = sum(ScanCount), NscanCount = n(), Nkinds = n_distinct(DepartmentDescription), nfline = n_distinct(FinelineNumber),
+                                        nupc = n_distinct(Upc))
+
+g_user1 <- group_by(test, VisitNumber)
+g_userScanCount1 <- g_user1 %>% summarize(TotalScanCount = sum(ScanCount), NscanCount = n(), Nkinds = n_distinct(DepartmentDescription), nfline = n_distinct(FinelineNumber),
+                                        nupc = n_distinct(Upc))
 
 
 
@@ -132,10 +141,17 @@ head(VisitDataF)
 head(tVisitDataF)
 train <- read.table("data/train_final.csv",sep=',',header = T)
 test <- read.table("data/test_final.csv",sep=',',header = T)
-train$uniq_item <- VisitDataF$uniq_item
-train$tot_item <- VisitDataF$tot_item
-test$uniq_item <- tVisitDataF$uniq_item
-test$tot_item <- tVisitDataF$tot_item
+train$TotalScanCount <- g_userScanCount$TotalScanCount
+train$Nkinds <- g_userScanCount$Nkinds
+train$NscanCount <- g_userScanCount$NscanCount
+train$nfline <- g_userScanCount$nfline
+train$nupc <- g_userScanCount$nupc
+
+test$TotalScanCount <- g_userScanCount1$TotalScanCount
+test$Nkinds <- g_userScanCount1$Nkinds
+test$NscanCount <- g_userScanCount1$NscanCount
+test$nfline <- g_userScanCount1$nfline
+test$nupc <- g_userScanCount1$nupc
 
 ###
 train.matrix <- as.matrix(train)
@@ -174,7 +190,7 @@ bst <- xgb.train( param=param, data=dtrain, label=label, nrounds=nround,  verbos
 # Compute feature importance matrix
 #importance_matrix <- xgb.importance(names, model = bst)
 # Nice graph
-#xgb.plot.importance(importance_matrix[1:30,])
+#xgb.plot.importance(importance_matrix[1:70,])
 
 
 ptest  <- predict(bst, dtest)
@@ -185,18 +201,10 @@ head(ptest)
 ###RAndom Forest
 
 cat("Training model - RF\n")
-set.seed(8)
-rf <- randomForest(dtrain, y, ntree=100, imp=TRUE, sampsize=10000, do.trace=TRUE)
+#set.seed(8)
+##rf <- randomForest(dtrain, y, ntree=100, imp=TRUE, sampsize=10000, do.trace=TRUE)
 #predict_rf1 <- predict(rf, mtrain)
-predict_rf2 <- predict(rf, mtest)
-
-
-
-
-
-
-
-
+#predict_rf2 <- predict(rf, mtest)
 
 
 # Decode prediction
@@ -207,7 +215,7 @@ pred <- t(ptest)
 print("Storing Output")
 submit <- function(filename) {
   #pred = format(pred, digits=2,scientific=F) # shrink the size of submission
-  pred1 <- data.frame(cbind(tVisitDataF$VisitNumber, pred))
+  pred1 <- data.frame(cbind(test$VisitNumber, pred))
   names(pred1) <- c("VisitNumber", paste("TripType", outcomes$TripType, sep = "_")) 
   
   write.table(format(pred1, scientific = FALSE), paste("output/", filename, sep = ""), row.names = FALSE, sep = ",")
