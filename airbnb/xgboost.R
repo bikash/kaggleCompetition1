@@ -1,4 +1,7 @@
 # airbnb X Kaggle
+library(ggplot2)
+library(sqldf)
+library(reshape2)
 
 #############################################################################################################################
 #There are 12 possible outcomes of the destination country: 'US', 'FR', 'CA', 'GB', 'ES', 'IT', 'PT', 'NL','DE', 'AU', 
@@ -39,6 +42,8 @@ testUsers <- read.table('data/test_users.csv', sep=',', stringsAsFactors=T, head
 testUsers$date_first_booking <- NULL
 trainUsers$date_first_booking <- NULL
 
+label <- trainUsers$country_destination
+
 ###Total number of training and testing datasets
 str(testUsers) 
 str(trainUsers)
@@ -54,6 +59,76 @@ length(df[(df$gender=="FEMALE"),]$gender)
 length(df[(df$gender=="OTHER"),]$gender)
 ## 334 are Other
 
+##replace alll missing
+df[is.na(df)] <- -1
+
+
+# clean Age by removing values Those are outlier
+df[df$age < 14 | df$age > 100,'age'] <- -1
+
+library(stringr)
+library(caret)
+# split date_account_created in year, month and day
+dac = as.data.frame(str_split_fixed(df$date_account_created, '-', 3))
+df['dac_year'] = dac[,1]
+df['dac_month'] = dac[,2]
+df['dac_day'] = dac[,3]
+df = df[,-c(which(colnames(df) %in% c('date_account_created')))]
+
+# split timestamp_first_active in year, month and day
+df[,'tfa_year'] = substring(as.character(df[,'timestamp_first_active']), 1, 4)
+df['tfa_month'] = substring(as.character(df['timestamp_first_active']), 5, 6)
+df['tfa_day'] = substring(as.character(df['timestamp_first_active']), 7, 8)
+df = df[,-c(which(colnames(df) %in% c('timestamp_first_active')))]
+
+
+# one-hot-encoding features
+ohe_feats = c('gender', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'first_affiliate_tracked', 'signup_app', 'first_device_type', 'first_browser')
+dummies <- dummyVars(~ gender + signup_method + signup_flow + language + affiliate_channel + affiliate_provider + first_affiliate_tracked + signup_app + first_device_type + first_browser, data = df)
+df_all_ohe <- as.data.frame(predict(dummies, newdata = df))
+df_all_combined <- cbind(df[,-c(which(colnames(df) %in% ohe_feats))],df_all_ohe)
+
+# split train and test
+X = df_all_combined[df_all_combined$id %in% train$id,]
+y <- recode(labels$country_destination,"'NDF'=0; 'US'=1; 'other'=2; 'FR'=3; 'CA'=4; 'GB'=5; 'ES'=6; 'IT'=7; 'PT'=8; 'NL'=9; 'DE'=10; 'AU'=11")
+X_test = df_all_combined[df_all_combined$id %in% test$id,]
+
+# train xgboost
+xgb <- xgboost(data = data.matrix(X[,-1]), 
+               label = y, 
+               eta = 0.1,
+               max_depth = 9, 
+               nround=25, 
+               subsample = 0.5,
+               colsample_bytree = 0.5,
+               seed = 1,
+               eval_metric = "merror",
+               objective = "multi:softprob",
+               num_class = 12,
+               nthread = 3
+)
+
+# predict values in test set
+y_pred <- predict(xgb, data.matrix(X_test[,-1]))
+
+# extract the 5 classes with highest probabilities
+predictions <- as.data.frame(matrix(y_pred, nrow=12))
+rownames(predictions) <- c('NDF','US','other','FR','CA','GB','ES','IT','PT','NL','DE','AU')
+predictions_top5 <- as.vector(apply(predictions, 2, function(x) names(sort(x)[12:8])))
+
+# create submission 
+ids <- NULL
+for (i in 1:NROW(X_test)) {
+  idx <- X_test$id[i]
+  ids <- append(ids, rep(idx,5))
+}
+submission <- NULL
+submission$id <- ids
+submission$country <- predictions_top5
+
+# generate submission file
+submission <- as.data.frame(submission)
+write.csv(submission, "output/xgboost.csv", quote=FALSE, row.names = FALSE)
 
 
 # libraries
@@ -104,7 +179,7 @@ sessionsDeviceType <- sqldf("select user_id,
                             ")
 # use reshape2 package to 'dcast' the above 2 tables separately
 sessionsActionTypeNew <- subset(sessionsActionType, user_id!='')
-sessionsActionTypeNew <- subset(sessionsDeviceType, user_id!='')
+sessionsDeviceTypeNew <- subset(sessionsDeviceType, user_id!='')
 row.names(sessionsActionTypeNew) <- NULL
 row.names(sessionsDeviceTypeNew) <- NULL
 userActionType <- dcast(sessionsActionTypeNew, user_id~action_type, sum)
@@ -135,10 +210,10 @@ testUsers[is.na(testUsers$age), "age"] <- round(mean(testUsers$age, na.rm=T))
 ## create new variable
 trainUsers$date_first_active <- as.Date(trainUsers$timestamp_first_active)
 testUsers$date_first_active <- as.Date(testUsers$timestamp_first_active)
-trainUsers$days_first_booking_active <- trainUsers$date_first_booking-trainUsers$date_first_active
-testUsers$days_first_booking_active <- testUsers$date_first_booking-testUsers$date_first_active
-trainUsers$days_first_booking_created <- trainUsers$date_first_booking-trainUsers$date_account_created
-testUsers$days_first_booking_created <- testUsers$date_first_booking-testUsers$date_account_created
+#trainUsers$days_first_booking_active <- trainUsers$date_first_booking-trainUsers$date_first_active
+#testUsers$days_first_booking_active <- testUsers$date_first_booking-testUsers$date_first_active
+#trainUsers$days_first_booking_created <- trainUsers$date_first_booking-trainUsers$date_account_created
+#testUsers$days_first_booking_created <- testUsers$date_first_booking-testUsers$date_account_created
 
 # merge trainUsers/testUsers with userActionDeviceSecsElapsed
 train <- merge(trainUsers, userActionDeviceSecsElapsed, by="user_id", all.x=TRUE)
