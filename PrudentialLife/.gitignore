@@ -1,0 +1,4 @@
+*.csv
+data/*.csv
+output/*.csv
+*.zip
