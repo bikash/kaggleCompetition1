@@ -18,7 +18,7 @@ set.seed(1785)
 ageSummary <- read.table('data/age_gender_bkts.csv', sep=',', stringsAsFactors=F, header=T)
 countriesSummary <- read.table('data/countries.csv', sep=',', stringsAsFactors=F, header=T)
 sessions <- read.table('data/sessions.csv', sep=',', stringsAsFactors=T, header=T)
-trainUsers <- read.table('data/train_users_2.csv', sep=',', stringsAsFactors=T, header=T)
+trainUsers <- read.table('data/train_users.csv', sep=',', stringsAsFactors=T, header=T)
 testUsers <- read.table('data/test_users.csv', sep=',', stringsAsFactors=T, header=T)
 
 
