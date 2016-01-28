@@ -15,7 +15,7 @@ def get_params():
     
     params = {}
     params["objective"] = "reg:linear"     
-    params["eta"] = 0.05
+    params["eta"] = 0.02
     params["min_child_weight"] = 240
     params["subsample"] = 0.9
     params["colsample_bytree"] = 0.67
@@ -33,7 +33,7 @@ def apply_offset(data, bin_offset, sv, scorer=eval_wrapper):
 
 # global variables
 columns_to_drop = ['Id', 'Response', 'Medical_History_10','Medical_History_24']
-xgb_num_rounds = 700
+xgb_num_rounds = 800
 num_classes = 8
 eta_list = [0.05] * 200 
 eta_list = eta_list + [0.02] * 500
