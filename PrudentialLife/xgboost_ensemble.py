@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.cross_validation import StratifiedKFold, KFold
 import scipy.optimize as optimize
 
-__author__ = 'bikash'
+__author__ = 'Bikash'
 
 
 def confusion_matrix(rater_a, rater_b, min_rating=None, max_rating=None):
@@ -117,7 +117,7 @@ def ranking(predictions, split_index):
 
 
 train_result = pd.DataFrame.from_csv("data/train_result.csv")
-# print train_result['Response'].value_counts()
+print train_result['Response'].value_counts()
 
 col = list(train_result.columns.values)
 result_ind = list(train_result[col[0]].value_counts().index)
@@ -188,7 +188,7 @@ best_splitter = 0
 
 param_grid = [
               {'silent': [1], 'nthread': [3], 'eval_metric': ['rmse'], 'eta': [0.01],
-               'objective': ['reg:linear'], 'max_depth': [7], 'num_round': [600], 'fit_const': [0.5],
+               'objective': ['reg:linear'], 'max_depth': [7], 'num_round': [900], 'fit_const': [0.5],
                'subsample': [0.75], 'risk': [0.5, 0.7, 0.9, 1]}
              ]
 
@@ -197,7 +197,7 @@ for params in ParameterGrid(param_grid):
     print params
 
     # CV
-    cv_n = 8
+    cv_n = 10
     kf = KFold(train.shape[0], n_folds=cv_n, shuffle=True)
     it_splitter = []
     metric = []
@@ -264,10 +264,10 @@ xgclassifier = xgboost.train(params, xg_train, num_round, watchlist);
 
 # predict
 predicted_results = xgclassifier.predict(xg_test)
-pd.DataFrame(predicted_results).to_csv('ensemble_test_predictions_xgboost_v3.csv')
+pd.DataFrame(predicted_results).to_csv('output/ensemble_test_predictions_xgboost_v3.csv')
 
 predicted_self_results = xgclassifier.predict(xg_train)
-pd.DataFrame(predicted_results).to_csv('ensemble_train_predictions_xgboost_v3.csv')
+pd.DataFrame(predicted_results).to_csv('output/ensemble_train_predictions_xgboost_v3.csv')
 splitter = opt_cut_global(predicted_self_results, train_result)
 res = optimize.minimize(opt_cut_local, splitter, args=(predicted_self_results, train_result), method='Nelder-Mead',
                         options={'disp': True}
@@ -281,46 +281,8 @@ submission_file['Response'] = classed_results
 
 print submission_file['Response'].value_counts()
 
-submission_file.to_csv("output/ensemble_xgboost_kfold_v4.csv")
+submission_file.to_csv("output/ensemble_xgboost.csv")
 
-# added best splitter, CV = 8, parsing V3
 
-# removed overfitting variables
-# GBtree: 0.670672166357, LB: 0.66955
-# train_test:
-# 8    16368
-# 7     9882
-# 5     7456
-# 6     7141
-# 4     5214
-# 1     4716
-# 3     4403
-# 2     4201
 
-# test:
-# 8    5787
-# 7    3152
-# 5    2606
-# 6    2236
-# 4    1728
-# 1    1637
-# 3    1440
-# 2    1179
 
-# Using splitter = [2.46039684, 3.48430979, 4.30777339, 4.99072484, 5.59295844, 6.17412558, 6.79373477]
-# test:  LB: 0.66695
-# 8    6189
-# 7    2808
-# 5    2357
-# 6    2129
-# 4    1866
-# 3    1752
-# 2    1600
-# 1    1064
-
-# train fit best splitter:
-# LB:
-# StratifiedKFold
-# risk=0.9: 0.66949
-# K-Fold
-# risk=:
