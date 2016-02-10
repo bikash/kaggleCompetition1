@@ -10,7 +10,7 @@ setwd("/Users/bikash/repos/kaggleCompetition1/homesite-quote-conversion")
 
 
 
-#my favorite seed^^
+#seed
 set.seed(1718)
 
 cat("reading the train and test data\n")
@@ -48,6 +48,16 @@ test$day <- weekdays(as.Date(test$Original_Quote_Date))
 test <- test[,-c(2)]
 
 
+##remove some feature
+train$PropertyField6 <- NULL
+train$GeographicField10A <- NULL
+
+test$PropertyField6 <- NULL
+test$GeographicField10A <- NULL
+
+
+
+
 feature.names <- names(train)[c(3:301)]
 cat("Feature Names\n")
 feature.names
@@ -78,10 +88,13 @@ watchlist<-list(val=dval,train=dtrain)
 param <- list(  objective           = "binary:logistic", 
                 booster = "gbtree",
                 eval_metric = "auc",
-                eta                 = 0.015, # 0.06, #0.01,
+                eta                 = 0.023, # 0.06, #0.01,
                 max_depth           = 6, #changed from default of 8
-                subsample           = 1, # 0.7
-                colsample_bytree    = 0.8 # 0.7
+                subsample           = 0.83, # 0.7
+                colsample_bytree    = 0.77 # 0.7
+                #num_parallel_tree   = 2
+                # alpha = 0.0001, 
+                # lambda = 1
 )
 
 clf <- xgb.train(   params              = param, 

@@ -1,0 +1,6 @@
+2016-02-10 13:37:09.741805: ('running script with parameters: ', 'n_threads - ', 6, '; ', 'n_seed - ', 1718, '; ', 'submission_suffix - xg')
+2016-02-10 13:37:09.742526: ('Loading test data ', '/Users/bikash/repos/kaggleCompetition1/airbnb/data/test_users.csv', ' to pandas data frame')
+2016-02-10 13:37:19.908095: ds_from_df <<
+2016-02-10 13:37:19.908427: add_features <<
+2016-02-10 13:37:30.795364: add_features >>
+2016-02-10 13:37:30.795457: add_sessions_data <<
