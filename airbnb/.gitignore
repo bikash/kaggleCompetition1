@@ -3,4 +3,5 @@ output/*
 *.csv
 *.zip
 *.pyc
+python/*
 
