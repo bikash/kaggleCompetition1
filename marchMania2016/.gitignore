@@ -1,0 +1,4 @@
+input/*
+*.csv
+*.R
+output/*
