@@ -70,6 +70,7 @@ all_data['Response'] = all_data['Response'].astype(int)
 # split train and test
 train = all_data[all_data['Response']>0].copy()
 test = all_data[all_data['Response']<1].copy()
+train_lable = all_data[all_data['Response']<1].copy()
 
 # convert data to xgb data structure
 xgtrain = xgb.DMatrix(train.drop(columns_to_drop, axis=1), train['Response'].values)
