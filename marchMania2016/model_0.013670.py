@@ -8,6 +8,8 @@ from sklearn import ensemble
 from sklearn.metrics import log_loss
 from sklearn.preprocessing import StandardScaler
 from sklearn.grid_search import (GridSearchCV, RandomizedSearchCV)
+from sklearn.linear_model import Ridge # only model used for final submission
+from sklearn.cross_validation import LeaveOneOut
 
 def Aggregate(teamcompactresults1,
               teamcompactresults2,
@@ -473,23 +475,33 @@ extc = ExtraTreesClassifier(n_estimators=2200,max_features= 29,criterion= 'entro
                             max_depth= 45, min_samples_leaf= 1, n_jobs = 1)     
 
 
-grid = RandomizedSearchCV(extc, model_grid, n_iter=10, cv=5, scoring="roc_auc")
+# Now define and train a Ridge Regression model. We tested others from the sklearn package:
+# SVR, RandomForest, K-nearest Neighbors, but found Ridge consistantly gave the strongest 
+# leaderboard results. When training data is small, simplest is often best.
+model_grid = [{'normalize': [True, False], 'alpha': np.logspace(0,10)}]
+model = Ridge()
+
+# Use a grid search and leave-one-out CV on the train set to find the best regularization parameter to use.
+# (might take a minute or two)
+grid = GridSearchCV(model, model_grid, cv=LeaveOneOut(len(trainlabels)), scoring='mean_squared_error')
 grid.fit(X_train,target) 
-print("Best parameters for Type Model:")
+print("Best parameters set found on development set:")
 print(grid.best_params_)
-extc.set_params(**grid.best_params_)
-#extc.fit(X, y)
 
-
-
-extc.fit(X_train,target) 
-x_pred = extc.predict_proba(X_train)
-print(log_loss(trainlabels, np.clip(x_pred[:,1]*1.0088, 1e-6, 1-1e-6)))
+# Re-train on full training set using the best parameters found in the last step.
+model.set_params(**grid.best_params_)
+model.fit(X_train,target) 
+x_pred = model.predict(X_train)
+print x_pred
+print(log_loss(trainlabels, np.clip(x_pred*1.0088, 1e-6, 1-1e-6)))
 print('Predict...')
-y_pred = extc.predict_proba(X_test)
-#print y_pred
+y_pred = model.predict(X_test)
+
+
+
+
 
 submission = pd.DataFrame({'Id': testids,
-                           'Pred': np.clip(y_pred[:,1]*1.0088, 1e-6, 1-1e-6)})
+                           'Pred': np.clip(y_pred*1.0088, 1e-6, 1-1e-6)})
 submission.to_csv('output/submission1.csv', index=False)
 print('Finished')
