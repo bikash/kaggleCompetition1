@@ -1,13 +1,18 @@
 import pandas as pd
 import numpy as np
 import csv
-import xgboost as xgb
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import ensemble
 from sklearn.metrics import log_loss
 from sklearn.preprocessing import StandardScaler
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
+#from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn import cross_validation
 
 def Aggregate(teamcompactresults1,
               teamcompactresults2,
@@ -406,6 +411,32 @@ def GrabData():
 
     return train, test
 
+def check_accuracy(X, y):
+    X_train, X_test, y_train, y_test = \
+        cross_validation.train_test_split(X, y, test_size=0.40, random_state=0)
+    clf = RandomForestClassifier(n_estimators=100, max_depth=None)
+    clf.fit(X_train, y_train)
+    print "Score on test set1: ", clf.score(X_test, y_test)
+    clf = ExtraTreesClassifier(n_estimators=100, max_depth=None, min_samples_split=1, random_state=0)
+    clf.fit(X_train, y_train)
+    print "Score on test set2: ", clf.score(X_test, y_test)
+
+    # clf = MLPClassifier(algorithm='l-bfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
+    # clf.fit(X_train, y_train)
+    # print "Score on test set: ", clf.score(X_test, y_test)
+
+    clf = AdaBoostClassifier(n_estimators=100)
+    clf.fit(X_train, y_train)
+    print "Score on test set3 : ", clf.score(X_test, y_test)
+
+    clf1 = ExtraTreesClassifier(n_estimators=50, max_depth=None, min_samples_split=1, random_state=0)
+    clf2 = RandomForestClassifier(n_estimators=50, random_state=0)
+    clf3 = AdaBoostClassifier(n_estimators=50)
+    clf4 = GaussianNB()
+
+    clf = VotingClassifier(estimators=[('et', clf1), ('rf', clf2), ('abc', clf3), ('gn', clf4)], voting='hard')
+    clf.fit(X_train, y_train)
+    print "Score on test set 4: ", clf.score(X_test, y_test)
 
 
 train, test = GrabData()
@@ -422,18 +453,24 @@ X_train = train
 X_test = test
 target = trainlabels
 
+print('checking accuracy...')
+check_accuracy(X_train,target)
+
 print('Training...')
-extc = ExtraTreesClassifier(n_estimators=2200,max_features= 29,criterion= 'gini',min_samples_split= 1,
-                            max_depth= 45, min_samples_leaf= 1, n_jobs = -1)      
+extc = ExtraTreesClassifier(n_estimators=3200,max_features= 29,criterion= 'entropy',min_samples_split= 1,
+                           max_depth= 45, min_samples_leaf= 1, n_jobs = -1)      
+
+#extc = AdaBoostClassifier(base_estimator=et, random_state=0)
+
 
 extc.fit(X_train,target) 
 x_pred = extc.predict_proba(X_train)
-print(log_loss(trainlabels, x_pred[:,1]))
+print(log_loss(trainlabels, np.clip(x_pred[:,1]*1.035, 1e-6, 1-1e-6)))
 print('Predict...')
 y_pred = extc.predict_proba(X_test)
 #print y_pred
 
 submission = pd.DataFrame({'Id': testids,
-                           'Pred': y_pred[:,1]})
-submission.to_csv('output/submission_extr.csv', index=False)
+                           'Pred': np.clip(y_pred[:,1]*1.035, 1e-8, 1-1e-8)})
+submission.to_csv('output/submission1.csv', index=False)
 print('Finished')

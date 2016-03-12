@@ -7,6 +7,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import ensemble
 from sklearn.metrics import log_loss
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 
 
 def Aggregate(teamcompactresults1,
@@ -18,15 +19,16 @@ def Aggregate(teamcompactresults1,
                                           right=regularseasoncompactresults,
                                           left_on=['year', 'team1'],
                                           right_on=['Season', 'Wteam'])
-    winningteam1compactresults.drop(['Season',
-                                     'Daynum',
-                                     'Wteam',
-                                     'Lteam',
-                                     'Lscore',
-                                     'Wloc',
-                                     'Numot'],
-                                    inplace=True,
-                                    axis=1)
+    winningteam1compactresults.drop(['Wloc'], inplace=True,axis=1)                          
+    # winningteam1compactresults.drop(['Season',
+    #                                  'Daynum',
+    #                                  'Wteam',
+    #                                  'Lteam',
+    #                                  'Lscore',
+    #                                  'Wloc',
+    #                                  'Numot'],
+    #                                 inplace=True,
+    #                                 axis=1)
     grpwinningteam1resultsaverage =  \
         winningteam1compactresults.groupby(['year', 'team1']).mean()
     winningteam1resultsaverage = grpwinningteam1resultsaverage.reset_index()
@@ -47,6 +49,8 @@ def Aggregate(teamcompactresults1,
     winningteam1resultsmedian = grpwinningteam1resultsmedian.reset_index()
     winningteam1resultsmedian.rename(columns={'Wscore': 'team1Wmedian'},
                                      inplace=True)
+ 
+
     grpwinningteam1resultsstd =  \
         winningteam1compactresults.groupby(['year', 'team1']).std()
     winningteam1resultsstd = grpwinningteam1resultsstd.reset_index()
@@ -57,15 +61,16 @@ def Aggregate(teamcompactresults1,
                                          right=regularseasoncompactresults,
                                          left_on=['year', 'team1'],
                                          right_on=['Season', 'Lteam'])
-    losingteam1compactresults.drop(['Season',
-                                    'Daynum',
-                                    'Wteam',
-                                    'Lteam',
-                                    'Wscore',
-                                    'Wloc',
-                                    'Numot'],
-                                   inplace=True,
-                                   axis=1)
+    losingteam1compactresults.drop(['Wloc'], inplace=True,axis=1)    
+    # losingteam1compactresults.drop(['Season',
+    #                                 'Daynum',
+    #                                 'Wteam',
+    #                                 'Lteam',
+    #                                 'Wscore',
+    #                                 'Wloc',
+    #                                 'Numot'],
+    #                                inplace=True,
+    #                                axis=1)
     grplosingteam1resultsaverage = \
         losingteam1compactresults.groupby(['year', 'team1']).mean()
     losingteam1resultsaverage = grplosingteam1resultsaverage.reset_index()
@@ -86,6 +91,7 @@ def Aggregate(teamcompactresults1,
     losingteam1resultsmedian = grplosingteam1resultsmedian.reset_index()
     losingteam1resultsmedian.rename(columns={'Lscore': 'team1Lmedian'},
                                     inplace=True)
+
     grplosingteam1resultsstd = \
         losingteam1compactresults.groupby(['year', 'team1']).std()
     losingteam1resultsstd = grplosingteam1resultsstd.reset_index()
@@ -96,15 +102,16 @@ def Aggregate(teamcompactresults1,
                                           right=regularseasoncompactresults,
                                           left_on=['year', 'team2'],
                                           right_on=['Season', 'Wteam'])
-    winningteam2compactresults.drop(['Season',
-                                     'Daynum',
-                                     'Wteam',
-                                     'Lteam',
-                                     'Lscore',
-                                     'Wloc',
-                                     'Numot'],
-                                    inplace=True,
-                                    axis=1)
+    winningteam2compactresults.drop(['Wloc'], inplace=True,axis=1)    
+    # winningteam2compactresults.drop(['Season',
+    #                                  'Daynum',
+    #                                  'Wteam',
+    #                                  'Lteam',
+    #                                  'Lscore',
+    #                                  'Wloc',
+    #                                  'Numot'],
+    #                                 inplace=True,
+    #                                 axis=1)
     grpwinningteam2resultsaverage = \
         winningteam2compactresults.groupby(['year', 'team2']).mean()
     winningteam2resultsaverage = grpwinningteam2resultsaverage.reset_index()
@@ -125,6 +132,7 @@ def Aggregate(teamcompactresults1,
     winningteam2resultsmedian = grpwinningteam2resultsmedian.reset_index()
     winningteam2resultsmedian.rename(columns={'Wscore': 'team2Wmedian'},
                                      inplace=True)
+   
     grpwinningteam2resultsstd = \
         winningteam2compactresults.groupby(['year', 'team2']).std()
     winningteam2resultsstd = grpwinningteam2resultsstd.reset_index()
@@ -135,15 +143,16 @@ def Aggregate(teamcompactresults1,
                                          right=regularseasoncompactresults,
                                          left_on=['year', 'team2'],
                                          right_on=['Season', 'Lteam'])
-    losingteam2compactresults.drop(['Season',
-                                    'Daynum',
-                                    'Wteam',
-                                    'Lteam',
-                                    'Wscore',
-                                    'Wloc',
-                                    'Numot'],
-                                   inplace=True,
-                                   axis=1)
+    losingteam2compactresults.drop(['Wloc'], inplace=True,axis=1)    
+    # losingteam2compactresults.drop(['Season',
+    #                                 'Daynum',
+    #                                 'Wteam',
+    #                                 'Lteam',
+    #                                 'Wscore',
+    #                                 'Wloc',
+    #                                 'Numot'],
+    #                                inplace=True,
+    #                                axis=1)
     grplosingteam2resultsaverage = \
         losingteam2compactresults.groupby(['year', 'team2']).mean()
     losingteam2resultsaverage = grplosingteam2resultsaverage.reset_index()
@@ -164,6 +173,8 @@ def Aggregate(teamcompactresults1,
     losingteam2resultsmedian = grplosingteam2resultsmedian.reset_index()
     losingteam2resultsmedian.rename(columns={'Lscore': 'team2Lmedian'},
                                     inplace=True)
+    
+
     grplosingteam2resultsstd = \
         losingteam2compactresults.groupby(['year', 'team2']).std()
     losingteam2resultsstd = grplosingteam2resultsstd.reset_index()
@@ -204,6 +215,8 @@ def Aggregate(teamcompactresults1,
                            right=winningteam1resultsmedian,
                            left_on=['year', 'team1'],
                            right_on=['year', 'team1'])
+
+
     agg_results = pd.merge(how='left',
                            left=agg_results,
                            right=losingteam1resultsmedian,
@@ -259,6 +272,8 @@ def Aggregate(teamcompactresults1,
                            right=losingteam2resultsmedian,
                            left_on=['year', 'team2'],
                            right_on=['year', 'team2'])
+
+
     agg_results = pd.merge(how='left',
                            left=agg_results,
                            right=winningteam2resultsstd,
@@ -409,6 +424,10 @@ def GrabData():
 
 
 train, test = GrabData()
+
+#test.to_csv('output/test.csv', index=False)
+train.to_csv('output/train.csv', index=False)
+
 trainlabels = train.result.values
 train.drop('result', inplace=True, axis=1)
 train.fillna(-1, inplace=True)
@@ -416,24 +435,52 @@ testids = test.Id.values
 test.drop(['Id', 'Pred'], inplace=True, axis=1)
 test.fillna(-1, inplace=True)
 ss = StandardScaler()
-train[train.columns] = np.round(ss.fit_transform(train), 4)
-test[test.columns] = np.round(ss.transform(test), 4)
+#train[train.columns] = np.round(ss.fit_transform(train), 4)
+#test[test.columns] = np.round(ss.transform(test), 4)
 X_train = train
 X_test = test
 target = trainlabels
-
 print('Training...')
-extc = ExtraTreesClassifier(n_estimators=2200,max_features= 29,criterion= 'gini',min_samples_split= 1,
+#print target
+
+X = X_train
+y= target
+ 
+
+
+extc = ExtraTreesClassifier(n_estimators=2900,max_features= 122, criterion= 'entropy',min_samples_split= 1,
                             max_depth= 45, min_samples_leaf= 1, n_jobs = -1)      
 
 extc.fit(X_train,target) 
 x_pred = extc.predict_proba(X_train)
-print(log_loss(trainlabels, x_pred[:,1]))
+print(log_loss(trainlabels, np.clip(x_pred[:,1]*1.0088, 1e-6, 1-1e-6)))
 print('Predict...')
 y_pred = extc.predict_proba(X_test)
 #print y_pred
 
+importances = extc.feature_importances_
+std = np.std([tree.feature_importances_ for tree in extc.estimators_],
+             axis=0)
+indices = np.argsort(importances)[::-1]
+
+# Print the feature ranking
+print("Feature ranking:")
+
+#for f in range(X.shape[1]):
+#    print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
+
+# Plot the feature importances of the forest
+# plt.figure()
+# plt.title("Feature importances")
+# plt.bar(range(X.shape[1]), importances[indices],
+#        color="r", yerr=std[indices], align="center")
+# plt.xticks(range(X.shape[1]), indices)
+# plt.xlim([-1, X.shape[1]])
+# plt.show()
+
+
+
 submission = pd.DataFrame({'Id': testids,
-                           'Pred': y_pred[:,1]})
-submission.to_csv('output/submission_extr.csv', index=False)
+                           'Pred': np.clip(y_pred[:,1]*1.0088, 1e-6, 1-1e-6)})
+submission.to_csv('output/submission1.csv', index=False)
 print('Finished')

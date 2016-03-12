@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import csv
-import xgboost as xgb
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import ensemble
@@ -414,26 +413,25 @@ train.drop('result', inplace=True, axis=1)
 train.fillna(-1, inplace=True)
 testids = test.Id.values
 test.drop(['Id', 'Pred'], inplace=True, axis=1)
-test.fillna(-1, inplace=True)
+test.fillna(1, inplace=True)
 ss = StandardScaler()
 train[train.columns] = np.round(ss.fit_transform(train), 4)
 test[test.columns] = np.round(ss.transform(test), 4)
 X_train = train
 X_test = test
 target = trainlabels
-
 print('Training...')
-extc = ExtraTreesClassifier(n_estimators=2200,max_features= 29,criterion= 'gini',min_samples_split= 1,
-                            max_depth= 45, min_samples_leaf= 1, n_jobs = -1)      
+extc = ExtraTreesClassifier(n_estimators=1200,max_features= 26,criterion= 'entropy',min_samples_split= 1,
+                            max_depth= 47, min_samples_leaf= 1, n_jobs = -1)      
 
 extc.fit(X_train,target) 
 x_pred = extc.predict_proba(X_train)
-print(log_loss(trainlabels, x_pred[:,1]))
+print(log_loss(trainlabels, np.clip(x_pred[:,1]*1.691, 1e-6, 1-1e-6)))
 print('Predict...')
 y_pred = extc.predict_proba(X_test)
 #print y_pred
 
 submission = pd.DataFrame({'Id': testids,
-                           'Pred': y_pred[:,1]})
-submission.to_csv('output/submission_extr.csv', index=False)
+                           'Pred': np.clip(y_pred[:,1]*1.0691, 1e-6, 1-1e-6)})
+submission.to_csv('output/submission1.csv', index=False)
 print('Finished')
