@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import csv
+import xgboost as xgb
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import ensemble
@@ -420,8 +421,9 @@ test[test.columns] = np.round(ss.transform(test), 4)
 X_train = train
 X_test = test
 target = trainlabels
+
 print('Training...')
-extc = ExtraTreesClassifier(n_estimators=1200,max_features= 29,criterion= 'gini',min_samples_split= 1,
+extc = ExtraTreesClassifier(n_estimators=2200,max_features= 29,criterion= 'gini',min_samples_split= 1,
                             max_depth= 100, min_samples_leaf= 1, n_jobs = -1)      
 
 extc.fit(X_train,target) 
