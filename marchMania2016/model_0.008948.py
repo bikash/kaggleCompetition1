@@ -430,7 +430,13 @@ print(log_loss(trainlabels, np.clip(x_pred[:,1]*1.691, 1e-6, 1-1e-6)))
 print('Predict...')
 y_pred = extc.predict_proba(X_test)
 #print y_pred
+pred = np.clip(y_pred[:,1]*1.0691, 1e-6, 1-1e-6)
 
+for x in pred:
+    if x>=0.7: 1.0
+    else if x<0.3: 0.0
+  else: x
+print pred
 submission = pd.DataFrame({'Id': testids,
                            'Pred': np.clip(y_pred[:,1]*1.0691, 1e-6, 1-1e-6)})
 submission.to_csv('output/submission1.csv', index=False)
