@@ -43,3 +43,18 @@ myFS<-fscaret(trainDF, testDF, myTimeLimit = 40, preprocessData=TRUE,
 # analyze results
 print(myFS$VarImp)
 print(myFS$PPlabels)
+
+
+#Check the MSE
+myFS$VarImp$matrixVarImp.MSE
+
+#We need to do a little wrangling in order to clean this up and get a nicely ordered list with the actual variable names attached:
+results <- myFS$VarImp$matrixVarImp.MSE
+results$Input_no <- as.numeric(results$Input_no)
+results <- results[c("SUM","SUM%","ImpGrad","Input_no")]
+myFS$PPlabels$Input_no <-  as.numeric(rownames(myFS$PPlabels))
+results <- merge(x=results, y=myFS$PPlabels, by="Input_no", all.x=T)
+results <- results[c('Labels', 'SUM')]
+results <- subset(results,results$SUM !=0)
+results <- results[order(-results$SUM),]
+print(results)
