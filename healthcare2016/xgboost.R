@@ -1,16 +1,134 @@
 
 require(xgboost)
 require(methods)
-library(fread)
 library(data.table)
 library(tm)
 
-setwd("/Users/bikash/repos/kaggleCompetition1/healthcare2016")
+setwd("/home/bikash/repos/kaggleCompetition1/healthcare2016")
 #train = read.csv('data/train.tsv',header=TRUE,stringsAsFactors = F)
 #test = read.csv('data/test.tsv',stringsAsFactors = F)
 
 test <- fread("data/test.tsv")
 train <- fread("data/train.tsv")
+
+test_id <- test$ID
+test$ID<-NULL
+test$Category <-NA
+#combine data set
+combi <- rbind(train, test)
+
+
+
+#install package
+library(tm)
+#create corpus
+corpus <- Corpus(VectorSource(combi$Question))
+
+#Convert text to lowercase
+corpus <- tm_map(corpus, tolower)
+corpus[[1]]
+
+#Remove Punctuation
+corpus <- tm_map(corpus, removePunctuation)
+corpus[[1]]
+
+#Remove Stopwords
+corpus <- tm_map(corpus, removeWords, c(stopwords('english')))
+corpus[[1]]
+
+#Remove Whitespaces
+corpus <- tm_map(corpus, stripWhitespace)
+corpus[[1]]
+
+# Perform Stemming
+corpus <- tm_map(corpus, stemDocument)
+corpus[[1]]
+
+ #After we are done with pre-processing, it is necessary to convert the text into plain text document. This helps in pre-processing documents as text documents.
+corpus <- tm_map(corpus, PlainTextDocument)
+
+
+#For further processing, we’ll create a document matrix where the text will categorized in columns
+#document matrix
+frequencies <- DocumentTermMatrix(corpus) 
+frequencies
+
+#Step 6. Data Exploration
+freq <- colSums(as.matrix(frequencies))
+length(freq)
+
+ord <- order(freq)
+ord
+
+#if you wish to export the matrix (to see how it looks) to an excel file
+m <- as.matrix(frequencies)
+dim(m) write.csv(m, file = 'matrix.csv')
+
+#check most and least frequent words
+freq[head(ord)]
+freq[tail(ord)]
+
+#check our table of 20 frequencies
+head(table(freq),20)
+tail(table(freq),20)
+
+#Hence, I’ll remove only the terms having frequency less than 3
+
+#remove sparse terms
+sparse <- removeSparseTerms(frequencies, 1 - 3/nrow(frequencies))
+dim(sparse)
+
+# Let’s visualize the data now. But first, we’ll create a data frame.
+
+#create a data frame for visualization
+wf <- data.frame(word = names(freq), freq = freq)
+head(wf)
+#plot terms which appear atleast 10,000 times
+library(ggplot2)
+chart <- ggplot(subset(wf, freq >10000), aes(x = word, y = freq))
+chart <- chart + geom_bar(stat = 'identity', color = 'black', fill = 'white')
+chart <- chart + theme(axis.text.x=element_text(angle=45, hjust=1))
+chart
+
+
+#We can also create a word cloud to check the most frequent terms. It is easy to build and gives an enhanced understanding of ingredients in this data. 
+
+#create wordcloud
+library(wordcloud)
+set.seed(1742)
+#plot word cloud
+wordcloud(names(freq), freq, min.freq = 2500, scale = c(6, .1), colors = brewer.pal(4, "BuPu"))
+
+#plot 5000 most used words
+wordcloud(names(freq), freq, max.words = 5000, scale = c(6, .1), colors = brewer.pal(6, 'Dark2'))
+
+
+#Now I’ll make final structural changes in the data.
+
+#create sparse as data frame
+newsparse <- as.data.frame(as.matrix(sparse))
+dim(newsparse)
+#check if all words are appropriate
+colnames(newsparse) <- make.names(colnames(newsparse))
+#check for the dominant dependent variable
+table(train$Question)
+
+
+#add cuisine
+newsparse$dominant <- as.factor(c(train$dominant, rep('italian', nrow(test))))
+#split data 
+mytrain <- newsparse[1:nrow(train),]
+mytest <- newsparse[-(1:nrow(train)),]
+
+
+
+
+
+
+
+
+
+
 
 
 
